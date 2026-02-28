@@ -60,3 +60,6 @@ Thumbs.db
 
 # Project specific
 skills/.template/
+
+# Analysis reports (internal use only)
+docs/COMPARISON_REPORT.md
