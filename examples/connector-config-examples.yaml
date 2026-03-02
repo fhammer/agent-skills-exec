@@ -1,0 +1,346 @@
+# Agent Skills Framework - 数据连接器配置示例
+# 版本: 1.0.0
+# 日期: 2026-03-02
+#
+# 说明:
+#   - 使用 ${ENV_VAR} 语法引用环境变量
+#   - 可以使用 ${ENV_VAR:default} 设置默认值
+#   - 敏感信息（密码、API密钥）建议通过环境变量传递
+
+---
+# ============================================
+# PostgreSQL 配置示例
+# ============================================
+postgresql_basic:
+  type: postgresql
+  connection_string: "postgresql://user:password@localhost:5432/mydb"
+  pool_size: 10
+  timeout: 30
+
+postgresql_advanced:
+  type: postgresql
+  # 使用环境变量
+  connection_string: "${DATABASE_URL}"
+  # 连接池配置
+  pool_size: "${DB_POOL_SIZE:20}"
+  max_overflow: "${DB_MAX_OVERFLOW:40}"
+  pool_timeout: "${DB_POOL_TIMEOUT:60}"
+  # 连接回收（防止连接超时）
+  pool_recycle: 3600
+  # 连接预ping（确保连接有效）
+  pool_pre_ping: true
+  # 是否打印SQL语句（调试用）
+  echo: false
+  # 健康检查
+  health_check:
+    enabled: true
+    interval: 30s
+    query: "SELECT 1"
+    timeout: 5s
+
+postgresql_with_ssl:
+  type: postgresql
+  connection_string: "${DATABASE_URL}"
+  ssl_mode: require
+  ssl_root_cert: /path/to/ca-cert.pem
+  ssl_cert: /path/to/client-cert.pem
+  ssl_key: /path/to/client-key.pem
+
+---
+# ============================================
+# MySQL 配置示例
+# ============================================
+mysql_basic:
+  type: mysql
+  connection_string: "mysql+pymysql://user:password@localhost:3306/mydb"
+  pool_size: 10
+  timeout: 30
+
+mysql_advanced:
+  type: mysql
+  host: "${MYSQL_HOST:localhost}"
+  port: "${MYSQL_PORT:3306}"
+  database: "${MYSQL_DATABASE}"
+  user: "${MYSQL_USER}"
+  password: "${MYSQL_PASSWORD}"
+  # 连接池
+  pool_size: 20
+  max_overflow: 30
+  # 字符集
+  charset: utf8mb4
+  collation: utf8mb4_unicode_ci
+  # 时区
+  timezone: +00:00
+  # SQL模式
+  sql_mode: "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES"
+  # 健康检查
+  health_check:
+    enabled: true
+    interval: 30s
+    query: "SELECT 1"
+
+---
+# ============================================
+# MongoDB 配置示例
+# ============================================
+mongodb_basic:
+  type: mongodb
+  connection_string: "mongodb://user:password@localhost:27017/mydb"
+  database: mydb
+
+mongodb_advanced:
+  type: mongodb
+  # 方式1: 使用连接字符串
+  connection_string: "${MONGODB_URL}"
+  database: "${MONGODB_DATABASE}"
+
+  # 方式2: 使用单独参数
+  # host: "${MONGODB_HOST:localhost}"
+  # port: "${MONGODB_PORT:27017}"
+  # username: "${MONGODB_USER}"
+  # password: "${MONGODB_PASSWORD}"
+  # auth_source: "admin"
+
+  # 连接选项
+  max_pool_size: 50
+  min_pool_size: 10
+  max_idle_time_ms: 60000
+  wait_queue_timeout_ms: 5000
+  server_selection_timeout_ms: 30000
+  heartbeat_frequency_ms: 10000
+  retry_writes: true
+  read_preference: primary  # primary, primaryPreferred, secondary, secondaryPreferred, nearest
+
+  # TLS/SSL
+  tls: false
+  # tls_ca_file: /path/to/ca.pem
+  # tls_certificate_key_file: /path/to/client.pem
+  # tls_allow_invalid_hostnames: false
+
+  # 健康检查
+  health_check:
+    enabled: true
+    interval: 30s
+    command: ping
+
+collections:
+  # 集合级别的索引配置（可选）
+  users:
+    indexes:
+      - keys:
+          email: 1
+        unique: true
+        name: idx_email_unique
+      - keys:
+          created_at: -1
+        name: idx_created_at
+
+  orders:
+    indexes:
+      - keys:
+          user_id: 1
+          status: 1
+        name: idx_user_status
+      - keys:
+          order_date: -1
+        name: idx_order_date
+        expireAfterSeconds: 2592000  # 30天后过期
+
+---
+# ============================================
+# HTTP/REST API 连接器配置示例
+# ============================================
+
+# Bearer Token 认证
+http_bearer:
+  type: http
+  base_url: "https://api.payment.com/v1"
+  auth:
+    type: bearer
+    token: "${API_TOKEN}"
+    # 或者从文件读取
+    # token_file: /secrets/api_token.txt
+  timeout: 30
+  headers:
+    Content-Type: "application/json"
+    X-API-Version: "v1"
+    X-Client-Version: "1.0.0"
+  retry:
+    max_retries: 3
+    backoff: exponential  # 或 linear
+    initial_delay: 1.0
+    max_delay: 30.0
+    retry_on_status: [408, 429, 500, 502, 503, 504]
+  # 代理设置（可选）
+  # proxy:
+  #   http: http://proxy.example.com:8080
+  #   https: http://proxy.example.com:8080
+
+# API Key 认证
+http_api_key:
+  type: http
+  base_url: "https://api.logistics.com"
+  auth:
+    type: api_key
+    key_header: X-API-Key
+    key_value: "${LOGISTICS_API_KEY}"
+    # 或者
+    # key_query_param: api_key
+    # key_value: "${LOGISTICS_API_KEY}"
+  timeout: 30
+  retry:
+    max_retries: 3
+    backoff: exponential
+
+# Basic 认证
+http_basic:
+  type: http
+  base_url: "https://api.internal.com"
+  auth:
+    type: basic
+    username: "${API_USERNAME}"
+    password: "${API_PASSWORD}"
+  timeout: 30
+
+# OAuth 2.0
+http_oauth2:
+  type: http
+  base_url: "https://api.service.com"
+  auth:
+    type: oauth2
+    grant_type: client_credentials  # 或 authorization_code, password
+    token_url: "https://auth.service.com/oauth/token"
+    client_id: "${CLIENT_ID}"
+    client_secret: "${CLIENT_SECRET}"
+    # authorization_code 额外参数
+    # authorization_url: "https://auth.service.com/oauth/authorize"
+    # redirect_uri: "https://callback.example.com"
+    # scope: "read write"
+  timeout: 30
+  # OAuth token 会自动管理和刷新
+
+# 高级配置
+http_advanced:
+  type: http
+  base_url: "https://api.example.com"
+  auth:
+    type: bearer
+    token: "${API_TOKEN}"
+  timeout: 30
+  # 连接池配置
+  pool_size: 100
+  pool_maxsize: 100
+  # SSL配置
+  ssl_verify: true
+  ssl_cert: /path/to/client.pem
+  ssl_key: /path/to/client.key
+  ssl_ca: /path/to/ca.pem
+  # 重试配置
+  retry:
+    max_retries: 5
+    backoff: exponential
+    initial_delay: 1.0
+    max_delay: 60.0
+    retry_on_status: [408, 429, 500, 502, 503, 504, 520]
+    retry_on_exception: [ConnectionError, TimeoutError]
+  # 限速
+  rate_limit:
+    requests: 100
+    period: 60  # 每60秒最多100个请求
+  # 钩子
+  hooks:
+    before_request: "hooks.add_signature"
+    after_response: "hooks.log_response"
+    on_error: "hooks.handle_error"
+
+---
+# ============================================
+# 多数据源配置示例
+# ============================================
+
+# 完整的生产环境配置
+production:
+  # 主数据库 - 订单系统
+  order_db:
+    type: postgresql
+    connection_string: "${ORDER_DATABASE_URL}"
+    pool_size: 50
+    max_overflow: 100
+    timeout: 30
+    health_check:
+      enabled: true
+      interval: 30s
+
+  # 用户数据库
+  user_db:
+    type: postgresql
+    connection_string: "${USER_DATABASE_URL}"
+    pool_size: 30
+    max_overflow: 60
+
+  # 日志数据库 - MongoDB
+  log_db:
+    type: mongodb
+    connection_string: "${MONGODB_URL}"
+    database: logs
+    max_pool_size: 50
+
+  # 支付API
+  payment_api:
+    type: http
+    base_url: "https://api.payment.com/v1"
+    auth:
+      type: bearer
+      token: "${PAYMENT_API_TOKEN}"
+    timeout: 30
+    retry:
+      max_retries: 3
+      backoff: exponential
+
+  # 物流API
+  logistics_api:
+    type: http
+    base_url: "https://api.logistics.com"
+    auth:
+      type: api_key
+      key_header: X-API-Key
+      key_value: "${LOGISTICS_API_KEY}"
+    timeout: 30
+
+# ============================================
+# 开发环境配置
+# ============================================
+development:
+  order_db:
+    type: postgresql
+    connection_string: "postgresql://dev_user:dev_pass@localhost:5432/order_dev"
+    pool_size: 5
+    echo: true  # 开发环境打印SQL
+
+  payment_api:
+    type: http
+    base_url: "https://sandbox-api.payment.com/v1"
+    auth:
+      type: bearer
+      token: "sandbox-token-123"
+    timeout: 60  # 沙箱环境较慢
+
+# ============================================
+# 测试环境配置
+# ============================================
+testing:
+  order_db:
+    type: postgresql
+    connection_string: "${TEST_DATABASE_URL:postgresql://test_user:test_pass@localhost:5432/order_test}"
+    pool_size: 3
+    # 测试环境使用内存数据库更快
+    # connection_string: "sqlite:///:memory:"
+
+  # Mock API服务
+  payment_api:
+    type: http
+    base_url: "http://mock-payment-server:8080"
+    auth:
+      type: bearer
+      token: "test-token"
+    timeout: 10
