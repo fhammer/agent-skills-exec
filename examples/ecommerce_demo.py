@@ -158,6 +158,10 @@ async def interactive_mode():
     executor = EcommerceRecommendationExecutor()
     user_id = "interactive_user"
 
+    # 维护对话上下文
+    conversation_context = {}
+    dialogue_state = None
+
     while True:
         try:
             user_input = input("用户: ").strip()
@@ -171,16 +175,40 @@ async def interactive_mode():
 
             result = await executor.execute(
                 user_input=user_input,
-                user_id=user_id
+                user_id=user_id,
+                context=conversation_context
             )
 
             print(f"\nAgent: {result.response_text}\n")
+
+            # 更新对话上下文，保存已收集的信息
+            dialogue_state = result.dialogue_state
+
+            # 保存需求分析结果到上下文
+            if result.demand_analysis:
+                if result.demand_analysis.category:
+                    conversation_context["category"] = result.demand_analysis.category
+
+                # 保存价格范围约束
+                for constraint in (result.demand_analysis.constraints or []):
+                    if constraint.type == "price_range":
+                        conversation_context["price_range"] = constraint.value
+
+            # 如果需要澄清，记录已询问的问题
+            if result.dialogue_state.value == "awaiting_clarification":
+                conversation_context["awaiting_clarification"] = True
+
+            # 如果推荐完成，清除等待澄清状态
+            elif result.dialogue_state.value == "recommendation_ready":
+                conversation_context.pop("awaiting_clarification", None)
 
         except KeyboardInterrupt:
             print("\n\n再见！")
             break
         except Exception as e:
             print(f"\n错误: {e}\n")
+            import traceback
+            traceback.print_exc()
 
 
 if __name__ == "__main__":

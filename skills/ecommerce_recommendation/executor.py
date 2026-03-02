@@ -6,6 +6,7 @@
 import asyncio
 import json
 import logging
+import re
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 
@@ -234,10 +235,13 @@ class DemandAnalyzer:
         constraints = []
         missing_info = []
 
-        # 检测类别（优先从上下文获取）
+        # 判断是否是澄清回答（简短的回答式输入）
+        is_clarification_response = self._is_clarification_response(user_input)
+
+        # 检测类别（优先从上下文获取，特别是澄清回答时）
         category = self._extract_category(user_input)
-        if not category and context:
-            category = context.get("category")
+        if not category and (context or is_clarification_response):
+            category = context.get("category") if context else None
             if category:
                 logger.info(f"从上下文获取商品类别: {category}")
         if not category:
@@ -245,8 +249,8 @@ class DemandAnalyzer:
 
         # 检测价格区间（优先从上下文获取）
         price_range = self._extract_price_range(user_input)
-        if not price_range and context:
-            price_range = context.get("price_range")
+        if not price_range and (context or is_clarification_response):
+            price_range = context.get("price_range") if context else None
             if price_range:
                 logger.info(f"从上下文获取价格范围: {price_range}")
         if price_range:
@@ -256,9 +260,11 @@ class DemandAnalyzer:
                 required=True
             ))
         else:
-            missing_info.append("预算范围")
+            # 只有在非澄清回答时才提示缺失价格
+            if not is_clarification_response:
+                missing_info.append("预算范围")
 
-        # 检测品牌
+        # 检测品牌（保存到上下文）
         brands = self._extract_brands(user_input)
         if brands:
             constraints.append(Constraint(
@@ -286,12 +292,32 @@ class DemandAnalyzer:
             missing_info=missing_info
         )
 
+    def _is_clarification_response(self, text: str) -> bool:
+        """判断是否是澄清回答（简短的补充信息）"""
+        # 简短的回答（少于20字且包含数字或品牌）
+        if len(text) < 20:
+            # 包含价格信息
+            if re.search(r'\d{3,5}', text):
+                return True
+            # 包含品牌名
+            if any(brand in text for brand in ["小米", "华为", "苹果", "拯救者", "联想"]):
+                return True
+            # 纯数字
+            if text.strip().isdigit():
+                return True
+        return False
+
     def _extract_category(self, text: str) -> Optional[str]:
         """提取商品类别"""
         categories = ["手机", "耳机", "电脑", "平板", "手表", "相机", "音箱", "笔记本"]
         for cat in categories:
             if cat in text:
                 return cat
+
+        # 特殊处理：拯救者是游戏笔记本品牌
+        if "拯救者" in text:
+            return "笔记本"
+
         return None
 
     def _extract_price_range(self, text: str) -> Optional[Dict[str, float]]:
@@ -310,11 +336,18 @@ class DemandAnalyzer:
             price = float(match.group(1))
             return {"min": 0, "max": price * 1.2}
 
+        # 匹配 "预算8000" 或 "8000预算"
+        pattern = r'(?:预算)?(\d{3,5})(?:元)?(?:预算)?'
+        match = re.search(pattern, text)
+        if match:
+            price = float(match.group(1))
+            return {"min": 0, "max": price * 1.1}
+
         return None
 
     def _extract_brands(self, text: str) -> Optional[List[str]]:
         """提取品牌"""
-        brands = ["小米", "华为", "苹果", "三星", "OPPO", "vivo", "一加", "iQOO", "红米", "荣耀"]
+        brands = ["小米", "华为", "苹果", "三星", "OPPO", "vivo", "一加", "iQOO", "红米", "荣耀", "拯救者", "联想", "戴尔", "惠普", "华硕", "雷神"]
         found = [b for b in brands if b in text]
         return found if found else None
 
@@ -477,59 +510,121 @@ class ProductSearcher:
                 )
             ]
         else:
-            mock_products = [
-                Product(
-                    product_id="p_001",
-                    name="Redmi K70",
-                    brand="小米",
-                    price=2499,
-                    category=category,
-                    description="骁龙8 Gen2处理器，2K 120Hz屏幕",
-                    attributes={
-                        "screen": "6.67英寸 2K 120Hz",
-                        "processor": "骁龙8 Gen2",
-                        "battery": "5000mAh",
-                        "charging": "120W快充"
-                    },
-                    rating=4.7,
-                    sales=50000,
-                    stock=1000
-                ),
-                Product(
-                    product_id="p_002",
-                    name="iQOO Neo9",
-                    brand="iQOO",
-                    price=2299,
-                    category=category,
-                    description="144Hz电竞屏，专为游戏优化",
-                    attributes={
-                        "screen": "6.78英寸 144Hz",
-                        "processor": "骁龙8 Gen2",
-                        "battery": "5160mAh",
-                        "charging": "120W快充"
-                    },
-                    rating=4.6,
-                    sales=30000,
-                    stock=800
-                ),
-                Product(
-                    product_id="p_003",
-                    name="一加Ace 3",
-                    brand="一加",
-                    price=2599,
-                    category=category,
-                    description="质感出色，系统流畅",
-                    attributes={
-                        "screen": "6.78英寸 1.5K 120Hz",
-                        "processor": "骁龙8 Gen2",
-                        "battery": "5500mAh",
-                        "charging": "100W快充"
-                    },
-                    rating=4.5,
-                    sales=25000,
-                    stock=600
-                )
-            ]
+            # 根据类别返回不同的商品
+            if category == "笔记本":
+                mock_products = [
+                    Product(
+                        product_id="l_001",
+                        name="拯救者Y7000P",
+                        brand="拯救者",
+                        price=7999,
+                        category=category,
+                        description="联想拯救者游戏本，i7处理器，RTX4060",
+                        attributes={
+                            "screen": "15.6英寸 2.5K 165Hz",
+                            "processor": "i7-13700HX",
+                            "gpu": "RTX 4060",
+                            "battery": "80Wh",
+                            "ram": "16GB DDR5",
+                            "storage": "1TB SSD"
+                        },
+                        rating=4.8,
+                        sales=80000,
+                        stock=500
+                    ),
+                    Product(
+                        product_id="l_002",
+                        name="拯救者Y9000P",
+                        brand="拯救者",
+                        price=9999,
+                        category=category,
+                        description="联想拯救者高端游戏本，i9处理器，RTX4070",
+                        attributes={
+                            "screen": "16英寸 2.5K 240Hz",
+                            "processor": "i9-13900HX",
+                            "gpu": "RTX 4070",
+                            "battery": "99.9Wh",
+                            "ram": "32GB DDR5",
+                            "storage": "1TB SSD"
+                        },
+                        rating=4.9,
+                        sales=60000,
+                        stock=300
+                    ),
+                    Product(
+                        product_id="l_003",
+                        name="联想小新Pro16",
+                        brand="联想",
+                        price=5999,
+                        category=category,
+                        description="轻薄高性能本，适合办公和学习",
+                        attributes={
+                            "screen": "16英寸 2.5K 120Hz",
+                            "processor": "i7-13700H",
+                            "battery": "75Wh",
+                            "ram": "16GB DDR5",
+                            "storage": "512GB SSD"
+                        },
+                        rating=4.6,
+                        sales=40000,
+                        stock=800
+                    )
+                ]
+            else:
+                # 默认手机商品
+                mock_products = [
+                    Product(
+                        product_id="p_001",
+                        name="Redmi K70",
+                        brand="小米",
+                        price=2499,
+                        category=category,
+                        description="骁龙8 Gen2处理器，2K 120Hz屏幕",
+                        attributes={
+                            "screen": "6.67英寸 2K 120Hz",
+                            "processor": "骁龙8 Gen2",
+                            "battery": "5000mAh",
+                            "charging": "120W快充"
+                        },
+                        rating=4.7,
+                        sales=50000,
+                        stock=1000
+                    ),
+                    Product(
+                        product_id="p_002",
+                        name="iQOO Neo9",
+                        brand="iQOO",
+                        price=2299,
+                        category=category,
+                        description="144Hz电竞屏，专为游戏优化",
+                        attributes={
+                            "screen": "6.78英寸 144Hz",
+                            "processor": "骁龙8 Gen2",
+                            "battery": "5160mAh",
+                            "charging": "120W快充"
+                        },
+                        rating=4.6,
+                        sales=30000,
+                        stock=800
+                    ),
+                    Product(
+                        product_id="p_003",
+                        name="一加Ace 3",
+                        brand="一加",
+                        price=2599,
+                        category=category,
+                        description="质感出色，系统流畅",
+                        attributes={
+                            "screen": "6.78英寸 1.5K 120Hz",
+                            "processor": "骁龙8 Gen2",
+                            "battery": "5500mAh",
+                            "charging": "100W快充"
+                        },
+                        rating=4.5,
+                        sales=25000,
+                        stock=600
+                    )
+                ]
 
         # 应用价格过滤
         price_constraint = next(
