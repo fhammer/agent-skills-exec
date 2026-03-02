@@ -33,25 +33,26 @@ DEFAULT_PERMISSIONS = {
             "any": ContextPermission.READ,
             "conversation_history": ContextPermission.READ,
             "parsed_intent": ContextPermission.WRITE,
-            "execution_plan": ContextPermission.WRITE
+            "execution_plan": ContextPermission.WRITE,
+            "intent": ContextPermission.WRITE
         },
         layer2_scratchpad={},
-        layer3_environment={"read": ContextPermission.READ}
+        layer3_environment={"any": ContextPermission.READ}
     ),
     "executor": LayerPermissions(
         layer1_user_input={"any": ContextPermission.READ, "conversation_history": ContextPermission.READ},
         layer2_scratchpad={"any": ContextPermission.WRITE},
-        layer3_environment={"read": ContextPermission.READ}
+        layer3_environment={"any": ContextPermission.READ}
     ),
     "synthesizer": LayerPermissions(
         layer1_user_input={"any": ContextPermission.READ, "conversation_history": ContextPermission.READ},
-        layer2_scratchpad={"read": ContextPermission.READ},
-        layer3_environment={"read": ContextPermission.READ}
+        layer2_scratchpad={"any": ContextPermission.READ},
+        layer3_environment={"any": ContextPermission.READ}
     ),
     "coordinator": LayerPermissions(
-        layer1_user_input={"read": ContextPermission.READ, "write": ContextPermission.WRITE},
-        layer2_scratchpad={"read": ContextPermission.READ, "write": ContextPermission.WRITE},
-        layer3_environment={"read": ContextPermission.READ, "write": ContextPermission.WRITE}
+        layer1_user_input={"any": ContextPermission.WRITE},
+        layer2_scratchpad={"any": ContextPermission.WRITE},
+        layer3_environment={"any": ContextPermission.WRITE}
     )
 }
 

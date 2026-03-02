@@ -28,10 +28,10 @@ class TestAgentContext:
         """Test Layer 1 permission control."""
         context = AgentContext()
 
-        # Planner should be able to write to Layer 1
+        # Planner should be able to write to Layer 1 (parsed_intent field)
         context.set_component("planner")
-        context.write_layer1("intent", "test", "planner")
-        assert context.read_layer1("intent") == "test"
+        context.write_layer1("parsed_intent", "test", "planner")
+        assert context.read_layer1("parsed_intent") == "test"
 
     def test_scratchpad_operations(self):
         """Test scratchpad operations."""
@@ -65,6 +65,7 @@ class TestAgentContext:
     def test_prepare_for_step(self):
         """Test step context preparation."""
         context = AgentContext()
+        context.set_component("coordinator")
 
         # Add some data
         context.write_layer1("raw_user_input", "test input", "coordinator")
