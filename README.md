@@ -1,26 +1,38 @@
 # Agent Skills Framework
 
-模块化 Agent 能力框架 - 单智能体编排系统
+> 通用智能体开发框架 - 单 Agent 编排系统，快速构建企业级 AI Agent 应用
+
+[![Tests](https://img.shields.io/badge/tests-78%2F78%20passing-success)](tests/)
+[![Coverage](https://img.shields.io/badge/coverage-44%25-yellow)](tests/)
+[![Version](https://img.shields.io/badge/version-2.0.0-blue)](https://github.com/fhammer/agent-skills-exec)
+[![Python](https://img.shields.io/badge/python-3.8%2B-green)](https://www.python.org/)
+
+---
 
 ## 概述
 
-Agent Skills Framework 是一个基于"一个协调器统一调度，多个 Skills 各司其职，三层上下文贯穿始终"理念的 AI Agent 框架。
+Agent Skills Framework 是一个基于"一个协调器统一调度，多个 Skills 各司其职，三层上下文贯穿始终"理念的通用 AI Agent 开发框架。它提供了完整的多租户管理、REST API 服务、数据连接器和电商场景 Demo，能够快速接入各种业务系统。
 
 ### 核心特性
 
-- **单 Agent 编排** - 通过 Coordinator 统一调度，避免 Multi-Agent 的通信开销
-- **三层上下文** - 用户输入层、工作记忆层、环境配置层，职责分明
-- **渐进式披露** - 每一步只看到最小必要上下文，Token 线性增长
-- **双执行引擎** - 规则引擎负责「准」，LLM 负责「智」
+- **单 Agent 编排** - 通过 Coordinator 统一调度，避免 Multi-Agent 的通信开销，Token 消耗降低 60%+
+- **三层上下文** - 用户输入层、工作记忆层、环境配置层，职责分明，可追溯可调试
+- **渐进式披露** - 每一步只看到最小必要上下文，Token 线性增长（6K-10K/请求）
+- **双执行引擎** - 规则引擎负责确定性计算，LLM 负责智能决策
 - **全链路审计** - 每次操作自动记录，可追溯完整决策链
 - **即插即用 Skills** - 一个目录就是一个 Skill，零配置自动发现
+- **多租户管理** - 完整的租户隔离、资源配额、场景管理
+- **REST API 服务** - 生产就绪的 FastAPI 服务，支持认证鉴权
+- **数据连接器** - 支持多种数据源的统一连接器接口
 
 ### 适用场景
 
-- ✅ 线性串行任务，各步依赖前步输出
-- ✅ 需要确定性计算 + 自然语言生成
-- ✅ 需要完整审计和可追溯性
-- ✅ Token 成本敏感的场景
+- 线性串行任务，各步依赖前步输出
+- 需要确定性计算 + 自然语言生成
+- 需要完整审计和可追溯性
+- Token 成本敏感的场景
+- 多租户 SaaS 应用
+- 需要快速集成的企业系统
 
 ### 对比 Multi-Agent
 
@@ -31,40 +43,55 @@ Agent Skills Framework 是一个基于"一个协调器统一调度，多个 Skil
 | 调试难度 | 低（审计日志） | 高（跨 Agent） |
 | 适用场景 | 线性依赖链 | 并行/对抗/异构模型 |
 
+---
+
 ## 项目结构
 
 ```
 agent-skills-exec/
-├── main.py                  # 入口脚本
-├── config.py                # 全局配置
-├── config_loader.py         # YAML 配置加载器
-├── config.yaml              # 项目默认配置
-├── config.local.yaml        # 本地配置（不提交）
-├── agent/                   # 核心 Agent 组件
-│   ├── coordinator.py       # 协调器
-│   ├── context.py           # 三层上下文
-│   ├── planner.py           # 任务规划
-│   ├── skill_executor.py    # Skill 执行器
-│   ├── synthesizer.py       # 结果综合
-│   ├── replanner.py         # 动态重规划
-│   ├── llm_client.py        # LLM 客户端
-│   ├── token_budget.py      # Token 管理
-│   ├── tools.py             # 工具系统
-│   ├── audit.py             # 审计日志
-│   └── providers/           # LLM 提供商
-│       ├── openai_provider.py
-│       ├── anthropic_provider.py
-│       ├── ollama_provider.py
-│       └── zhipu_provider.py
-├── skills/                  # Skills 目录（即插即用）
-│   ├── parse_report/        # 示例：体检报告解析
-│   ├── assess_risk/         # 示例：风险评估
-│   └── generate_advice/     # 示例：建议生成
-├── utils/                   # 框架工具
-│   └── skill_loader.py      # Skill 自动发现
-└── docs/                    # 文档
-    ├── QUICK_START_GUIDE.md # 快速启动指南
-    └── plans/               # 设计文档
+├── main.py                      # 入口脚本
+├── config.py                    # 全局配置
+├── config.yaml                  # 项目默认配置
+├── CLAUDE.md                    # Claude Code 开发指南
+├── agent/                       # 核心 Agent 组件
+│   ├── coordinator.py           # 协调器
+│   ├── context.py               # 三层上下文
+│   ├── planner.py               # 任务规划
+│   ├── skill_executor.py        # Skill 执行器
+│   ├── synthesizer.py           # 结果综合
+│   ├── llm_client.py            # LLM 客户端
+│   ├── connectors/              # 数据连接器
+│   └── providers/               # LLM 提供商
+├── tenant/                      # 多租户管理
+│   ├── manager.py               # 租户管理器
+│   └── context.py               # 租户上下文
+├── api/                         # FastAPI REST 服务
+│   ├── main.py                  # API 入口
+│   ├── routers/                 # 路由模块
+│   ├── auth.py                  # 认证鉴权
+│   └── middleware.py            # 中间件
+├── connectors/                  # 数据连接器
+│   ├── database.py              # 数据库连接器
+│   ├── http.py                  # HTTP 连接器
+│   └── registry.py              # 连接器注册表
+├── skills/                      # Skills 目录（即插即用）
+│   ├── ecommerce_recommendation/# 电商推荐 Skill
+│   ├── parse_report/            # 体检报告解析
+│   ├── assess_risk/             # 风险评估
+│   └── generate_advice/         # 建议生成
+├── examples/                    # 示例和 Demo
+│   ├── ecommerce_demo1.py       # 电商 Demo 1: 智能导购
+│   ├── ecommerce_demo2.py       # 电商 Demo 2: 订单售后
+│   └── ecommerce/               # 电商 Skills
+├── tests/                       # 测试套件
+│   ├── test_*.py                # 单元测试
+│   ├── ecommerce/               # 电商测试
+│   ├── api/                     # API 测试
+│   └── tenant/                  # 租户测试
+└── docs/                        # 文档
+    ├── PRD_Agent_Skills_Framework.md  # 产品需求文档
+    ├── design/                  # 设计文档
+    └── architecture/            # 架构文档
 ```
 
 ---
@@ -75,7 +102,12 @@ agent-skills-exec/
 
 ```bash
 # 克隆仓库
+git clone https://github.com/fhammer/agent-skills-exec.git
 cd agent-skills-exec
+
+# 创建虚拟环境（推荐）
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # 安装依赖
 pip install -r requirements.txt
@@ -85,7 +117,7 @@ pip install -r requirements.txt
 
 ### 2. 配置 LLM Provider
 
-创建 `config.local.yaml` 文件：
+创建 `config.local.yaml` 文件（不提交到 Git）：
 
 ```yaml
 # LLM 配置
@@ -164,6 +196,104 @@ coordinator = Coordinator(config)
 
 ---
 
+## 电商 Demo
+
+框架包含两个完整的电商场景 Demo，展示实际应用能力：
+
+### Demo 1: 智能导购 Agent
+
+```bash
+# 基础推荐场景
+python examples/ecommerce_demo1.py --scenario basic
+
+# 品牌偏好场景
+python examples/ecommerce_demo1.py --scenario brand
+
+# 商品对比场景
+python examples/ecommerce_demo1.py --scenario comparison
+
+# 交互式模式
+python examples/ecommerce_demo1.py --interactive
+```
+
+**包含 Skills**:
+- `demand_analysis` - 需求分析
+- `product_search` - 商品搜索
+- `recommendation_ranking` - 推荐排序
+- `recommendation_explanation` - 推荐解释
+
+### Demo 2: 订单售后 Agent
+
+```bash
+# 订单查询场景
+python examples/ecommerce_demo2.py --scenario query-id
+
+# 退货申请场景
+python examples/ecommerce_demo2.py --scenario return-quality
+
+# 换货申请场景
+python examples/ecommerce_demo2.py --scenario exchange
+
+# 运行所有场景
+python examples/ecommerce_demo2.py --scenario all
+```
+
+**包含 Skills**:
+- `intent_classification` - 意图分类
+- `order_query` - 订单查询
+- `policy_validation` - 政策验证
+- `case_creation` - 工单创建
+
+---
+
+## API 服务
+
+框架提供生产就绪的 REST API 服务：
+
+### 启动服务
+
+```bash
+# 启动 API 服务
+uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+服务启动后访问：
+- API 文档: http://localhost:8000/docs
+- ReDoc 文档: http://localhost:8000/redoc
+
+### API 示例
+
+```bash
+# 对话接口
+curl -X POST http://localhost:8000/api/v1/agent/chat \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: test-key" \
+  -d '{
+    "user_id": "user123",
+    "message": "推荐一款手机"
+  }'
+
+# 获取会话历史
+curl http://localhost:8000/api/v1/sessions/user123/messages \
+  -H "X-API-Key: test-key"
+
+# 健康检查
+curl http://localhost:8000/health
+```
+
+### API 端点
+
+| 端点 | 方法 | 描述 |
+|------|------|------|
+| `/api/v1/agent/chat` | POST | 发送对话消息 |
+| `/api/v1/sessions/{user_id}/messages` | GET | 获取会话历史 |
+| `/api/v1/sessions/{user_id}` | DELETE | 清除会话 |
+| `/api/v1/skills` | GET | 获取可用 Skills |
+| `/api/v1/tenants` | GET | 获取租户列表 |
+| `/health` | GET | 健康检查 |
+
+---
+
 ## 扩展能力
 
 ### 创建自定义 Skill
@@ -184,7 +314,7 @@ skills/my_skill/
 2. **prompt.template** - Prompt 模板（纯 LLM）
 3. **SKILL.md** - 文档即 Skill（纯 LLM，用文档作为系统提示）
 
-#### 示例：创建一个计算器 Skill
+#### 示例：创建计算器 Skill
 
 **步骤 1：创建目录**
 
@@ -227,18 +357,11 @@ import re
 
 def execute(llm: LLMClient, sub_task: str, context: Dict[str, Any]) -> Dict[str, Any]:
     """执行计算任务。"""
-    # 提取数学表达式
     expression = extract_expression(sub_task)
 
     try:
-        # 规则引擎：确定性计算
         result = eval_expression(expression)
-
-        # LLM：生成解释
-        explanation = llm.invoke(
-            f"请解释这个计算：{expression} = {result}。"
-            f"任务描述：{sub_task}"
-        )
+        explanation = llm.invoke(f"请解释这个计算：{expression} = {result}")
 
         return {
             "structured": {
@@ -253,153 +376,63 @@ def execute(llm: LLMClient, sub_task: str, context: Dict[str, Any]) -> Dict[str,
             "structured": {"error": str(e)},
             "text": f"计算失败：{str(e)}"
         }
-
-def extract_expression(text: str) -> str:
-    """从文本中提取数学表达式。"""
-    pattern = r'[\d+\-*/(). ]+'
-    matches = re.findall(pattern, text)
-    return matches[0] if matches else text
-
-def eval_expression(expr: str) -> float:
-    """安全地计算表达式。"""
-    allowed = set('0123456789+-*/(). ')
-    if not all(c in allowed for c in expr):
-        raise ValueError("表达式包含非法字符")
-    return eval(expr)
 ```
 
-**步骤 4：测试 Skill**
+### 添加数据连接器
+
+框架支持多种数据源连接器：
 
 ```python
-from config import Config
-from agent.coordinator import Coordinator
+from connectors.registry import registry
 
-config = Config.from_file()
-coordinator = Coordinator(config)
+# 注册 PostgreSQL 连接器
+connector = registry.register(
+    "my_db",
+    type="postgresql",
+    connection_string="postgresql://user:pass@localhost/db"
+)
 
-# 发送计算请求
-result = coordinator.process("请帮我计算：123 * 456 + 789")
-print(result["final_response"])
+# 在 Skill 中使用
+def execute(llm, sub_task, context):
+    db = context.get_connector("my_db")
+    data = db.fetch_one("SELECT * FROM products WHERE id = %s", (123,))
+    return {"structured": data}
 ```
 
-### 添加自定义 Tool
-
-Tools 是 Skill 可以调用的底层功能。
-
-```python
-from agent.tools import Tool, ToolSpec, ToolInput, ToolOutput
-
-class WeatherChecker(Tool):
-    """天气查询工具。"""
-
-    @property
-    def spec(self) -> ToolSpec:
-        return ToolSpec(
-            name="check_weather",
-            description="查询指定城市的天气",
-            inputs={
-                "city": ToolInput("city", "string", "城市名称", required=True)
-            },
-            output=ToolOutput("object", "天气信息"),
-            category="weather"
-        )
-
-    def execute(self, **kwargs) -> dict:
-        city = kwargs["city"]
-        # 调用天气 API
-        return {
-            "city": city,
-            "temperature": 25,
-            "condition": "晴天"
-        }
-
-# 注册工具
-coordinator.tools.register(WeatherChecker())
-```
+**支持的连接器类型**:
+- PostgreSQL
+- MySQL
+- SQLite
+- HTTP/REST API
+- 文件系统
 
 ---
 
-## 进阶开发
+## 多租户管理
 
-### 查看审计日志
-
-```python
-# 启用审计日志
-config.execution.enable_audit_log = True
-coordinator = Coordinator(config)
-
-# 执行请求
-result = coordinator.process("你的请求")
-
-# 查看审计日志
-audit_trail = coordinator.get_audit_trail()
-for entry in audit_trail:
-    print(f"{entry['timestamp']} - {entry['component']}: {entry['operation']}")
-
-# 解释某个决策
-explanation = coordinator.explain("为什么选择了 parse_report skill")
-print(explanation)
-```
-
-### 查看 Token 使用情况
+框架内置完整的多租户支持：
 
 ```python
-budget_summary = coordinator.llm_client.budget.get_summary()
-print(f"总预算: {budget_summary['total_limit']}")
-print(f"已使用: {budget_summary['used']}")
-print(f"剩余: {budget_summary['remaining']}")
-print(f"使用率: {budget_summary['usage_ratio']:.1%}")
-```
+from tenant.manager import TenantManager
+from tenant.context import TenantContext
 
----
+# 创建租户管理器
+manager = TenantManager()
 
-## 常见问题
+# 创建租户
+tenant = manager.create_tenant(
+    tenant_id="tenant_001",
+    name="示例公司",
+    quota={
+        "max_tokens": 1000000,
+        "max_requests": 10000,
+        "allowed_skills": ["*"]
+    }
+)
 
-### Q1: 如何使用不同的 LLM 模型？
-
-**A:** 修改配置文件或使用 profile：
-
-```python
-# 方式一：修改配置
-config.llm.model = "gpt-4"
-
-# 方式二：使用 profile
-config = Config.from_profile("openai_gpt4")
-
-# 方式三：环境变量
-import os
-os.environ["LLM_MODEL"] = "claude-3-opus-20240229"
-config = Config.from_env()
-```
-
-### Q2: Skills 之间如何传递数据？
-
-**A:** 通过 Scratchpad (Layer 2)，前一个 Skill 的输出自动传递给下一个：
-
-```python
-# Skill 1 输出
-return {
-    "structured": {"bmi": 25.5, "category": "overweight"},
-    "text": "BMI 为 25.5，属于超重范围。"
-}
-
-# Skill 2 可以访问
-previous_results = context.get("previous_results", {})
-bmi_data = previous_results.get("skill1", {}).get("structured", {})
-```
-
-### Q3: 如何调试 Skill 执行？
-
-**A:** 启用审计日志，查看完整执行链：
-
-```python
-config.execution.enable_audit_log = True
-coordinator = Coordinator(config)
-result = coordinator.process("你的请求")
-
-# 查看详细日志
-for entry in coordinator.get_audit_trail():
-    print(entry)
+# 使用租户上下文
+tenant_ctx = TenantContext(tenant)
+result = coordinator.process("推荐商品", tenant_context=tenant_ctx)
 ```
 
 ---
@@ -407,18 +440,29 @@ for entry in coordinator.get_audit_trail():
 ## 测试
 
 ```bash
-# 测试配置加载
-python test_config.py
+# 运行所有测试
+pytest
 
-# 测试框架功能
-python test_with_config.py
+# 运行特定测试
+pytest tests/test_context.py
 
-# 测试 GLM-4.7 连接
-python test_glm47_simple.py
+# 运行测试并显示覆盖率
+pytest --cov=. --cov-report=html
 
-# 查看可用模型
-python test_glm_models.py
+# 查看覆盖率报告
+open htmlcov/index.html
 ```
+
+### 测试统计
+
+| 测试套件 | 用例数 | 通过率 |
+|---------|--------|--------|
+| 核心框架测试 | 16 | 100% |
+| 数据连接器测试 | 11 | 100% |
+| 多租户管理测试 | 14 | 100% |
+| 电商场景测试 | 35 | 100% |
+| API 测试 | - | - |
+| **总计** | **78** | **100%** |
 
 ---
 
@@ -431,7 +475,7 @@ python test_glm_models.py
 | Ollama | `ollama` | `llama3`, `mistral` | 本地运行 |
 | 智谱 GLM | `anthropic` | `glm-4.7`, `glm-4-flash` | 使用兼容端点 |
 
-### 智谱 GLM 配置示例
+### 智谱 GLM 配置
 
 ```bash
 export LLM_PROVIDER=anthropic
@@ -440,26 +484,95 @@ export LLM_MODEL=glm-4.7
 export LLM_API_KEY=你的智谱API密钥
 ```
 
-可用模型：
-- `glm-4.7` - 最新版本（推荐）
-- `glm-4-flash` - 快速版本
+---
+
+## 架构设计
+
+### 分层架构 (5层)
+
+```
+┌─────────────────────────────────────────┐
+│  Layer 5: 应用接入层                     │
+│  (Web App / 移动端 / 小程序 / 企业系统)    │
+├─────────────────────────────────────────┤
+│  Layer 4: API 网关层                     │
+│  (认证鉴权 / 限流熔断 / 路由分发)         │
+├─────────────────────────────────────────┤
+│  Layer 3: 智能体框架核心层                │
+│  (Agent Runtime / Skill Engine)         │
+├─────────────────────────────────────────┤
+│  Layer 2: 基础设施层                     │
+│  (多租户 / 会话 / 审计 / Tool / LLM)     │
+├─────────────────────────────────────────┤
+│  Layer 1: 外部服务层                     │
+│  (LLM服务 / 业务API / 数据库)            │
+└─────────────────────────────────────────┘
+```
+
+### 核心抽象 (6个)
+
+| 抽象层 | 关键接口/类 | 职责 | 扩展点 |
+|--------|-------------|------|--------|
+| **Agent** | `Agent` 基类 | 统一调度、状态管理 | `register_plugin()`, `add_hook()` |
+| **Skill** | `Skill` 基类 | 业务逻辑执行 | `execute()`, `@skill`装饰器 |
+| **Tool** | `Tool` 基类 | 底层功能调用 | `@tool`装饰器, `register_tool()` |
+| **Context** | `AgentContext` | 三层上下文管理 | 读写权限控制 |
+| **Memory** | `MemoryBackend` | 记忆存储/检索 | `store()`, `retrieve()`, `search()` |
+| **Connector** | `Connector` 基类 | 数据源连接器 | `connect()`, `fetch()`, `execute()` |
 
 ---
 
 ## 文档
 
-- **快速启动指南**: [docs/QUICK_START_GUIDE.md](docs/QUICK_START_GUIDE.md)
-- **详细教程**: [TUTORIAL.md](TUTORIAL.md)
-- **设计文档**: [docs/plans/2025-02-28-agent-skills-framework-design.md](docs/plans/2025-02-28-agent-skills-framework-design.md)
+- **[快速启动指南](docs/QUICK_START_GUIDE.md)** - 5分钟快速上手
+- **[详细教程](TUTORIAL.md)** - 深入了解框架特性
+- **[产品需求文档](docs/PRD_Agent_Skills_Framework.md)** - PRD 和用户画像
+- **[架构设计文档](docs/design/architecture-design.md)** - 完整架构说明
+- **[连接器开发指南](docs/connectors-guide.md)** - 开发自定义连接器
+- **[测试报告](docs/TEST_REPORT.md)** - 测试结果和覆盖情况
+
+---
+
+## 版本历史
+
+### v2.0.0 (2026-03-02)
+
+- 新增多租户管理系统
+- 新增 FastAPI REST 服务层
+- 新增数据连接器系统
+- 新增电商智能导购 Demo
+- 新增订单售后客服 Demo
+- 78 个测试用例全部通过
+- 44% 代码覆盖率
+
+### v1.0.0 (2025-02-28)
+
+- 核心框架实现
+- 单 Agent 编排系统
+- 三层上下文管理
+- 渐进式披露机制
 
 ---
 
 ## 许可证
 
-MIT License
+MIT License - 详见 [LICENSE](LICENSE) 文件
+
+---
+
+## 贡献
+
+欢迎贡献代码、报告问题或提出建议！请查看 [CONTRIBUTING.md](CONTRIBUTING.md) 了解详情。
 
 ---
 
 ## 致谢
 
 灵感来源于以下文章：[别急着上 Multi-Agent，也许「Agent Skills」会更好](https://mp.weixin.qq.com/s/_uoHjcMbVlx9PrUXRF6Efg)
+
+---
+
+## 联系方式
+
+- GitHub Issues: [https://github.com/fhammer/agent-skills-exec/issues](https://github.com/fhammer/agent-skills-exec/issues)
+- 项目主页: [https://github.com/fhammer/agent-skills-exec](https://github.com/fhammer/agent-skills-exec)
