@@ -80,7 +80,7 @@ agent-skills-exec/
 │   ├── assess_risk/             # 风险评估
 │   └── generate_advice/         # 建议生成
 ├── examples/                    # 示例和 Demo
-│   ├── ecommerce_demo1.py       # 电商 Demo 1: 智能导购
+│   ├── ecommerce_demo.py        # 电商 Demo 1: 智能导购
 │   ├── ecommerce_demo2.py       # 电商 Demo 2: 订单售后
 │   └── ecommerce/               # 电商 Skills
 ├── tests/                       # 测试套件
@@ -204,16 +204,16 @@ coordinator = Coordinator(config)
 
 ```bash
 # 基础推荐场景
-python examples/ecommerce_demo1.py --scenario basic
+python examples/ecommerce_demo.py --scenario basic
 
 # 品牌偏好场景
-python examples/ecommerce_demo1.py --scenario brand
+python examples/ecommerce_demo.py --scenario brand
 
 # 商品对比场景
-python examples/ecommerce_demo1.py --scenario comparison
+python examples/ecommerce_demo.py --scenario comparison
 
 # 交互式模式
-python examples/ecommerce_demo1.py --interactive
+python examples/ecommerce_demo.py --interactive
 ```
 
 **包含 Skills**:
