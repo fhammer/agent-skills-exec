@@ -76,3 +76,16 @@ PROJECT_EXECUTION_STATUS.md
 
 # Chinese documentation backups
 工业级*.md
+
+# Test artifacts
+tests/test-results.xml
+tests/*.disabled
+tests/deprecated/
+tests/conftest.py.disabled
+
+# Temporary/empty files
+EOF
+PROJECT_EXECUTION_STATUS.md
+
+# Chinese documentation backups
+工业级*.md
