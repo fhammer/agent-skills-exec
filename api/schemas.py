@@ -11,13 +11,16 @@ class LLMConfig(BaseModel):
     """LLM 配置"""
     provider: str = "anthropic"
     model: str = "glm-4.7"
-    api_key: str
+    api_key: str = ""
     base_url: Optional[str] = None
 
 
 class TenantCreateRequest(BaseModel):
     """创建租户请求"""
     name: str
+    tenant_id: Optional[str] = None
+    plan: Optional[str] = "free"  # free, basic, pro, enterprise
+    create_api_key: bool = True
     llm_config: Optional[LLMConfig] = None
     skill_whitelist: Optional[List[str]] = None
     rate_limit: Optional[Dict[str, int]] = None
@@ -28,12 +31,67 @@ class TenantResponse(BaseModel):
     """租户响应"""
     tenant_id: str
     name: str
-    api_key: str
-    llm_config: LLMConfig
-    skill_whitelist: List[str]
-    rate_limit: Dict[str, int]
-    is_active: bool
+    plan: Optional[str] = None
+    status: Optional[str] = None
+    api_key: Optional[str] = None
+    jwt_token: Optional[str] = None
+    features: Optional[Dict[str, Any]] = None
+    rate_limits: Optional[Dict[str, Any]] = None
     created_at: str
+
+    class Config:
+        extra = "ignore"
+
+
+# ==================== 场景相关 ====================
+
+class SceneCreateRequest(BaseModel):
+    """创建场景请求"""
+    name: str
+    description: Optional[str] = None
+    default_skills: Optional[List[str]] = None
+    enabled_skills: Optional[List[str]] = None
+    custom_settings: Optional[Dict[str, Any]] = None
+
+
+class SceneResponse(BaseModel):
+    """场景响应"""
+    scene_id: str
+    tenant_id: str
+    name: str
+    description: Optional[str] = None
+    status: str
+    available_skills: List[str]
+    created_at: str
+
+
+# ==================== 会话相关 ====================
+
+class SessionCreateRequest(BaseModel):
+    """创建会话请求"""
+    user_id: Optional[str] = None
+    scene_id: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class SessionResponse(BaseModel):
+    """会话响应"""
+    session_id: str
+    tenant_id: str
+    scene_id: Optional[str] = None
+    user_id: Optional[str] = None
+    status: str
+    created_at: str
+    expires_at: Optional[str] = None
+    total_messages: Optional[int] = None
+    total_tokens: Optional[int] = None
+
+
+class SessionHistoryResponse(BaseModel):
+    """会话历史响应"""
+    session_id: str
+    messages: List[Dict[str, Any]]
+    total: int
 
 
 # ==================== 对话相关 ====================
@@ -78,24 +136,6 @@ class SkillResponse(BaseModel):
     is_active: bool
 
 
-# ==================== 会话相关 ====================
-
-class SessionResponse(BaseModel):
-    """会话响应"""
-    session_id: str
-    tenant_id: str
-    user_id: str
-    created_at: str
-    last_active: str
-
-
-class SessionHistoryResponse(BaseModel):
-    """会话历史响应"""
-    session_id: str
-    messages: List[Dict[str, Any]]
-    total: int
-
-
 # ==================== 工具相关 ====================
 
 class ToolRegisterRequest(BaseModel):
@@ -109,6 +149,40 @@ class ToolResponse(BaseModel):
     name: str
     description: str
     category: str
+
+
+# ==================== 认证相关 ====================
+
+class LoginRequest(BaseModel):
+    """登录请求"""
+    api_key: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+
+
+class LoginResponse(BaseModel):
+    """登录响应"""
+    access_token: str
+    token_type: str = "bearer"
+    expires_in: int
+    tenant_id: str
+    permissions: List[str]
+
+
+class ApiKeyCreateRequest(BaseModel):
+    """创建 API Key 请求"""
+    name: str
+    permissions: Optional[List[str]] = None
+    expires_in_days: Optional[int] = 365
+
+
+class ApiKeyResponse(BaseModel):
+    """API Key 响应"""
+    key_id: str
+    name: str
+    api_key: str
+    created_at: str
+    expires_at: Optional[str] = None
 
 
 # ==================== 指标相关 ====================
@@ -130,5 +204,5 @@ class HealthResponse(BaseModel):
     status: str
     version: str
     timestamp: str
-    database: str
-    redis: str
+    database: Optional[str] = None
+    redis: Optional[str] = None

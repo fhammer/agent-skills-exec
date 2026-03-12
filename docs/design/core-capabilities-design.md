@@ -68,17 +68,238 @@
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### 优先级划分
+### 产品功能优先级划分
 
-| 优先级 | 能力 | 说明 | 与现有框架关系 |
-|--------|------|------|----------------|
-| P0 | 多租户管理 | 租户隔离、场景管理 | 新增模块，不影响现有代码 |
-| P0 | API服务层 | REST API、认证鉴权 | 新增api/模块，独立部署 |
-| P0 | 数据连接器 | 数据库/API/消息队列连接 | 扩展Tool系统 |
-| P1 | 监控告警 | 指标、日志、追踪 | 扩展现有audit.py |
-| P1 | 对话管理 | 多轮对话、状态管理 | 完善dialogue/模块 |
-| P2 | CLI工具 | 脚手架、调试、部署 | 独立工具包 |
-| P2 | Skill市场 | 分发、版本、热更新 | 独立服务 |
+#### P0 - 核心必备能力（上线第一天必须具备）
+
+| 优先级 | 能力 | 说明 | 与现有框架关系 | 电商Demo相关性 |
+|--------|------|------|----------------|----------------|
+| P0 | 多租户/多场景管理 | 租户隔离、场景配置、配置继承 | 新增模块，不影响现有代码 | 支持电商平台不同业务线（如手机、服装）的独立Agent实例 |
+| P0 | API服务层 | REST API、认证鉴权、限流熔断 | 新增api/模块，独立部署 | 提供电商Demo的外部访问接口 |
+| P0 | 数据连接器 | 数据库/API/消息队列连接 | 扩展Tool系统 | 连接电商业务系统（商品、订单、用户） |
+| P0 | 监控与可观测性 | 指标采集、审计日志、基础告警 | 扩展现有audit.py | 确保电商Demo的稳定运行和问题排查 |
+
+#### P1 - 重要增强能力（上线后2-4周内完成）
+
+| 优先级 | 能力 | 说明 | 与现有框架关系 | 电商Demo相关性 |
+|--------|------|------|----------------|----------------|
+| P1 | 对话管理 | 多轮对话、状态管理、意图切换 | 完善dialogue/模块 | 支持电商Demo的复杂对话流程 |
+| P1 | 高级监控告警 | 分布式追踪、智能告警、可视化Dashboard | 扩展监控模块 | 电商Demo的性能优化和问题定位 |
+| P1 | Skill版本管理 | 版本控制、兼容性检查、灰度发布 | 增强Skill管理系统 | 电商Demo的Skill迭代和风险控制 |
+
+#### P2 - 未来规划能力（上线后2-3个月内完成）
+
+| 优先级 | 能力 | 说明 | 与现有框架关系 | 电商Demo相关性 |
+|--------|------|------|----------------|----------------|
+| P2 | CLI工具 | 脚手架、调试、部署 | 独立工具包 | 简化电商Demo的开发和部署流程 |
+| P2 | Skill市场 | 分发、版本、热更新 | 独立服务 | 提供电商场景常用Skill的快速获取 |
+| P2 | 高级集成能力 | Webhook、消息队列、事件驱动 | 增强集成模块 | 支持电商系统的实时数据同步 |
+
+---
+
+## 用户故事与验收标准
+
+### 多租户管理用户故事
+
+| ID | 角色 | 用户故事 | 验收标准 | 优先级 |
+|----|------|---------|---------|--------|
+| US-001 | 平台管理员 | 作为平台管理员，我希望创建新租户，以便为不同的企业客户提供独立的Agent服务 | 1. 租户创建成功率>99.9%<br>2. 租户创建时间<100ms<br>3. 租户ID全局唯一性保证<br>4. 创建租户后自动生成API密钥 | P0 |
+| US-002 | 平台管理员 | 作为平台管理员，我希望配置租户的资源配额，以便控制不同租户的Token消耗和QPS | 1. 支持配置Token预算/天<br>2. 支持配置QPS限制<br>3. 配额超限自动触发限流<br>4. 配额使用情况实时展示 | P0 |
+| US-003 | 租户管理员 | 作为租户管理员，我希望在我的租户下创建多个场景，以便为不同业务线配置独立的Agent | 1. 单租户支持100+场景<br>2. 场景创建时间<50ms<br>3. 场景间配置完全隔离<br>4. 支持场景启用/禁用 | P0 |
+| US-004 | 租户管理员 | 作为租户管理员，我希望租户级配置可以被场景继承，以便减少重复配置工作 | 1. 支持3级继承链（平台→租户→场景）<br>2. 子级配置可覆盖父级<br>3. 配置变更后5秒内生效<br>4. 配置变更有审计记录 | P0 |
+| US-005 | 平台管理员 | 作为平台管理员，我希望租户间数据完全隔离，以确保数据安全和隐私合规 | 1. 租户A无法访问租户B的数据<br>2. 跨租户数据访问自动拒绝<br>3. 数据隔离无性能损耗<br>4. 满足GDPR/等保要求 | P0 |
+
+### Skill生态用户故事
+
+| ID | 角色 | 用户故事 | 验收标准 | 优先级 |
+|----|------|---------|---------|--------|
+| US-101 | AI工程师 | 作为AI工程师，我希望使用标准模板快速创建自定义Skill，以便快速开发新能力 | 1. 5分钟内生成可用Skill骨架<br>2. 支持3种执行模式模板<br>3. 自动生成SKILL.md元数据<br>4. 包含单元测试模板 | P1 |
+| US-102 | AI工程师 | 作为AI工程师，我希望在本地开发时支持热重载，以便快速验证Skill功能 | 1. 代码修改后10秒内生效<br>2. 支持增量更新<br>3. 热重载失败自动回滚<br>4. 提供重载日志 | P1 |
+| US-103 | 企业开发者 | 作为企业开发者，我希望在组织内部分享和复用Skill，以便提升开发效率 | 1. 支持Skill上传到租户仓库<br>2. 支持按标签/名称搜索<br>3. 支持Skill版本管理<br>4. 支持使用统计 | P1 |
+| US-104 | 独立开发者 | 作为独立开发者，我希望从社区Skill市场发现和安装第三方Skill，以便快速扩展我的Agent能力 | 1. 支持按标签/评分搜索<br>2. Skill安装成功率>95%<br>3. 自动检查依赖关系<br>4. 支持一键安装/卸载 | P2 |
+| US-105 | AI工程师 | 作为AI工程师，我希望管理Skill版本，以便安全地发布Skill更新 | 1. 支持语义化版本<br>2. 兼容性检查准确率>99%<br>3. 支持灰度发布<br>4. 支持版本回滚 | P1 |
+
+### 业务系统集成用户故事
+
+| ID | 角色 | 用户故事 | 验收标准 | 优先级 |
+|----|------|---------|---------|--------|
+| US-201 | 企业开发者 | 作为企业开发者，我希望通过简单配置将Agent连接到现有数据库，以便Skill能够查询业务数据 | 1. 支持MySQL、PostgreSQL、MongoDB等10+种数据库<br>2. 配置时间<5分钟<br>3. 连接池自动管理<br>4. 连接失败自动重试3次 | P0 |
+| US-202 | AI工程师 | 作为AI工程师，我希望通过配置将外部API封装为Tool，以便Skill调用第三方服务 | 1. 支持RESTful API调用<br>2. 支持Bearer/API Key等认证方式<br>3. 支持限流和超时配置<br>4. API响应时间<2s（99分位） | P0 |
+| US-203 | 企业开发者 | 作为企业开发者，我希望Agent能够通过消息队列与现有系统异步通信，以便处理高并发场景 | 1. 支持Kafka、RabbitMQ<br>2. 支持发布/订阅模式<br>3. 消息处理可靠性>99.99%<br>4. 支持消息幂等性 | P2 |
+| US-204 | 运维工程师 | 作为运维工程师，我希望监控数据源的健康状态，以便及时发现和处理连接问题 | 1. 健康检查间隔可配置（10s-5min）<br>2. 异常状态自动告警<br>3. 健康状态API可访问<br>4. 告警延迟<30s | P0 |
+| US-205 | 企业开发者 | 作为企业开发者，我希望通过Webhook接收Agent事件，以便与现有业务流程集成 | 1. 支持事件订阅配置<br>2. Webhook调用成功率>99%<br>3. 支持失败重试策略<br>4. 支持签名验证 | P2 |
+
+### 监控与可观测性用户故事
+
+| ID | 角色 | 用户故事 | 验收标准 | 优先级 |
+|----|------|---------|---------|--------|
+| US-301 | 运维工程师 | 作为运维工程师，我希望实时监控Agent的运行状态和性能指标，以便及时发现系统问题 | 1. 指标采集延迟<100ms<br>2. 支持Prometheus格式<br>3. Dashboard刷新间隔1s-5min可调<br>4. 支持自定义监控面板 | P0 |
+| US-302 | AI工程师 | 作为AI工程师，我希望查看完整的执行链路审计日志，以便追溯每个决策的来源 | 1. 支持查询最近90天日志<br>2. 按租户/会话/时间筛选<br>3. 日志查询响应<3s<br>4. 日志完整性保证 | P0 |
+| US-303 | 运维工程师 | 作为运维工程师，我希望在Token预算耗尽、错误率升高或响应变慢时收到告警，以便及时处理 | 1. 支持阈值/趋势/异常检测<br>2. 告警触达延迟<30s<br>3. 支持Webhook/邮件/短信<br>4. 告警规则可配置 | P1 |
+| US-304 | 运维工程师 | 作为运维工程师，我希望追踪分布式请求的完整链路，以便定位性能瓶颈 | 1. 支持OpenTelemetry标准<br>2. 追踪成功率>99%<br>3. 端到端延迟可视化<br>4. 与主流APM工具集成 | P1 |
+| US-305 | 企业管理者 | 作为企业管理者，我希望查看租户的Token消耗统计和成本分析，以便优化成本 | 1. 按日/周/月维度统计<br>2. 支持租户级成本分摊<br>3. 报表导出功能<br>4. 消耗趋势预测 | P1 |
+
+### 开发者体验用户故事
+
+| ID | 角色 | 用户故事 | 验收标准 | 优先级 |
+|----|------|---------|---------|--------|
+| US-401 | 独立开发者 | 作为独立开发者，我希望在5分钟内完成环境搭建并运行第一个Agent，以便快速上手 | 1. 3步完成初始化<br>2. 5分钟接入成功率>90%<br>3. 完整的快速开始文档<br>4. 提供示例代码 | P2 |
+| US-402 | AI工程师 | 作为AI工程师，我希望使用CLI工具快速创建Skill、本地调试和部署Agent，以便提升开发效率 | 1. 支持skill create/test/deploy命令<br>2. 支持断点调试<br>3. 支持热重载<br>4. CLI响应时间<1s | P2 |
+| US-403 | 企业开发者 | 作为企业开发者，我希望有完整的API文档和最佳实践指南，以便正确使用框架 | 1. 100% API文档覆盖<br>2. 支持OpenAPI/Swagger<br>3. 提供10+常见场景示例<br>4. 代码示例可直接运行 | P2 |
+| US-404 | AI工程师 | 作为AI工程师，我希望使用多语言SDK调用框架，以便与现有技术栈集成 | 1. 提供Python/JavaScript/Go SDK<br>2. SDK功能与REST API对等<br>3. SDK有完整的文档和示例<br>4. SDK版本与框架兼容 | P2 |
+| US-405 | 开发团队 | 作为开发团队，我希望有完整的测试工具和模拟环境，以便在本地完成测试 | 1. 提供LLM Mock服务<br>2. 提供数据源Mock<br>3. 集成测试框架<br>4. 测试覆盖率报告 | P2 |
+
+---
+
+## 电商Demo结合点设计
+
+### 电商Demo与核心能力的映射
+
+#### 智能导购/商品推荐Agent
+
+| 电商Demo需求 | 使用的核心能力 | 实现方式 |
+|-------------|---------------|---------|
+| 多租户隔离 | 多租户管理 | 每个电商品牌/店铺作为独立租户 |
+| 商品数据查询 | 数据连接器 | 通过PostgreSQL连接器查询商品库 |
+| 用户画像查询 | 数据连接器 | 通过MongoDB连接器查询用户画像 |
+| 会话管理 | 对话管理 | 状态机驱动的多轮对话 |
+| 推荐效果追踪 | 监控可观测性 | 采集推荐点击率、转化率指标 |
+| 租户级配置 | 配置继承 | 平台→品牌→店铺三级配置 |
+
+#### 订单处理/售后客服Agent
+
+| 电商Demo需求 | 使用的核心能力 | 实现方式 |
+|-------------|---------------|---------|
+| 订单数据查询 | 数据连接器 | 通过PostgreSQL连接器查询订单库 |
+| 物流信息查询 | 数据连接器 | 通过HTTP连接器调用物流API |
+| 售后工单创建 | 数据连接器 | 通过消息队列异步创建工单 |
+| 客服对话管理 | 对话管理 | 意图识别+槽位填充的对话流程 |
+| 操作审计追踪 | 监控可观测性 | 完整记录每笔售后操作 |
+| 多场景配置 | 多场景管理 | 售前/售后/投诉等不同场景 |
+
+### 电商Demo的多租户场景设计
+
+```yaml
+# 电商平台租户结构示例
+tenants:
+  # 平台级租户（管理所有品牌）
+  platform:
+    tenant_id: "platform_001"
+    name: "电商平台"
+    config:
+      llm_provider: "anthropic"
+      llm_model: "glm-4.7"
+      token_budget: 10000000  # 平台总预算
+    scenes:
+      platform_admin:
+        name: "平台管理"
+        skills: ["tenant_management", "data_analysis"]
+
+  # 品牌租户（小米）
+  xiaomi:
+    tenant_id: "brand_xiaomi"
+    name: "小米官方旗舰店"
+    parent_tenant: "platform_001"  # 继承平台配置
+    config:
+      llm_model: "glm-4.7"  # 可覆盖父级配置
+      token_budget: 2000000
+    scenes:
+      sales_assistant:
+        name: "智能导购"
+        skills: ["demand_analysis", "product_search", "recommendation_ranking"]
+        data_sources: ["xiaomi_products", "user_profiles"]
+      after_sales:
+        name: "售后客服"
+        skills: ["order_query", "policy_validation", "case_creation"]
+        data_sources: ["xiaomi_orders", "service_cases"]
+
+  # 品牌租户（华为）
+  huawei:
+    tenant_id: "brand_huawei"
+    name: "华为官方旗舰店"
+    parent_tenant: "platform_001"
+    config:
+      token_budget: 1500000
+    scenes:
+      sales_assistant:
+        name: "智能导购"
+        skills: ["demand_analysis", "product_search", "recommendation_ranking"]
+        data_sources: ["huawei_products", "user_profiles"]
+```
+
+### 电商Demo的数据连接器配置
+
+```yaml
+# 电商Demo数据源配置
+data_sources:
+  # 商品数据库
+  product_db:
+    type: postgresql
+    connection_string: "${PRODUCT_DB_URL}"
+    pool_size: 20
+    timeout: 30
+    health_check:
+      interval: 30s
+      query: "SELECT 1"
+
+  # 订单数据库
+  order_db:
+    type: postgresql
+    connection_string: "${ORDER_DB_URL}"
+    pool_size: 15
+    timeout: 30
+
+  # 用户画像数据库
+  user_profile_db:
+    type: mongodb
+    connection_string: "${USER_PROFILE_DB_URL}"
+    database: "user_profiles"
+    pool_size: 10
+
+  # 物流API
+  logistics_api:
+    type: http
+    base_url: "https://api.logistics.com/v1"
+    auth:
+      type: api_key
+      key_header: X-API-Key
+      key_value: "${LOGISTICS_API_KEY}"
+    retry:
+      max_retries: 3
+      backoff: exponential
+
+  # 售后消息队列
+  service_mq:
+    type: kafka
+    brokers: ["kafka1:9092", "kafka2:9092"]
+    topic: "service-cases"
+    producer_config:
+      acks: all
+      retries: 3
+```
+
+### 电商Demo的监控指标设计
+
+#### 业务指标
+
+| 指标名称 | 说明 | 目标值 | 采集方式 |
+|---------|------|--------|---------|
+| 导购会话数 | 智能导购Agent的会话数量 | 10000+/天 | 会话计数 |
+| 推荐点击率 | 用户点击推荐商品的比例 | >15% | 推荐点击事件 |
+| 转化率 | 从推荐到下单的转化比例 | >3% | 订单关联分析 |
+| 售后解决率 | 售后客服自动解决的比例 | >80% | 工单状态分析 |
+| 平均响应时间 | Agent的平均响应时间 | <2s | 性能监控 |
+| 用户满意度 | 用户对Agent服务的评分 | >4.5/5 | 会话后评价 |
+
+#### 技术指标
+
+| 指标名称 | 说明 | 告警阈值 |
+|---------|------|---------|
+| Token消耗速率 | 每分钟Token使用量 | >10000/min |
+| 错误率 | 请求失败比例 | >5% |
+| 响应延迟P99 | 99分位响应时间 | >5s |
+| 数据源连接数 | 活跃连接数占比 | >80% |
+| 队列积压 | 消息队列积压数量 | >1000 |
 
 ---
 
@@ -442,29 +663,124 @@ data_sources:
 
 ---
 
-### 3.4 监控与可观测性 (P1)
+### 3.4 监控与可观测性 (P0/P1)
 
 #### 3.4.1 用户故事
 
-**US-4.1 实时监控** (企业开发者)
-> 作为企业开发者，我希望实时监控Agent的运行状态、Token消耗和响应延迟，及时发现并处理问题。
+**US-4.1 实时监控** (运维工程师)
+> 作为运维工程师，我希望实时监控Agent的运行状态和性能指标，以便及时发现系统问题。
 
 **US-4.2 审计追踪** (AI工程师)
-> 作为AI工程师，我希望查看完整的执行链路，追溯每个决策的来源和上下文。
+> 作为AI工程师，我希望查看完整的执行链路审计日志，以便追溯每个决策的来源和上下文。
 
-**US-4.3 告警通知** (企业开发者)
-> 作为企业开发者，我希望在Token预算耗尽、错误率升高或响应变慢时收到告警通知。
+**US-4.3 告警通知** (运维工程师)
+> 作为运维工程师，我希望在Token预算耗尽、错误率升高或响应变慢时收到告警通知，以便及时处理。
+
+**US-4.4 分布式追踪** (运维工程师)
+> 作为运维工程师，我希望追踪分布式请求的完整链路，以便定位性能瓶颈。
+
+**US-4.5 成本分析** (企业管理者)
+> 作为企业管理者，我希望查看租户的Token消耗统计和成本分析，以便优化成本。
 
 #### 3.4.2 功能需求
 
-| 功能 | 需求描述 | 验收标准 |
-|------|----------|----------|
-| **指标采集** | 采集执行次数、延迟、Token消耗等 | 支持Prometheus格式，采集延迟<100ms |
-| **实时监控** | 提供Dashboard展示关键指标 | 刷新间隔支持1s-5min可调 |
-| **审计日志** | 记录完整的执行链路 | 支持查询最近90天日志 |
-| **分布式追踪** | 支持OpenTelemetry标准 | 追踪成功率>99% |
-| **告警规则** | 支持自定义告警规则 | 支持阈值、趋势、异常检测 |
-| **通知渠道** | 支持Webhook、邮件、短信 | 告警触达延迟<30s |
+| 功能 | 需求描述 | 验收标准 | 优先级 |
+|------|----------|----------|--------|
+| **指标采集** | 采集执行次数、延迟、Token消耗等 | 支持Prometheus格式，采集延迟<100ms | P0 |
+| **实时监控** | 提供Dashboard展示关键指标 | 刷新间隔支持1s-5min可调 | P0 |
+| **审计日志** | 记录完整的执行链路 | 支持查询最近90天日志 | P0 |
+| **分布式追踪** | 支持OpenTelemetry标准 | 追踪成功率>99% | P1 |
+| **告警规则** | 支持自定义告警规则 | 支持阈值、趋势、异常检测 | P1 |
+| **通知渠道** | 支持Webhook、邮件、短信 | 告警触达延迟<30s | P1 |
+| **成本分析** | Token消耗统计和成本分摊 | 按日/周/月维度统计，支持报表导出 | P1 |
+
+#### 3.4.3 指标设计
+
+**系统指标**
+
+| 指标名称 | 类型 | 说明 |
+|---------|------|------|
+| agent_requests_total | Counter | Agent请求总数 |
+| agent_request_duration_seconds | Histogram | 请求延迟分布 |
+| agent_errors_total | Counter | 错误总数 |
+| token_used_total | Counter | Token消耗总数 |
+| token_budget_remaining | Gauge | 剩余Token预算 |
+| active_sessions | Gauge | 活跃会话数 |
+| skill_executions_total | Counter | Skill执行总数 |
+| skill_execution_duration_seconds | Histogram | Skill执行延迟分布 |
+
+**业务指标（电商Demo）**
+
+| 指标名称 | 类型 | 说明 |
+|---------|------|------|
+| shopping_sessions_total | Counter | 导购会话总数 |
+| recommendation_clicks_total | Counter | 推荐点击总数 |
+| conversion_rate | Gauge | 转化率 |
+| customer_service_resolution_rate | Gauge | 售后解决率 |
+| user_satisfaction_score | Gauge | 用户满意度评分 |
+
+#### 3.4.4 审计日志数据模型
+
+```python
+@dataclass
+class AuditLogEntry:
+    """审计日志条目"""
+    trace_id: str                    # 分布式追踪ID
+    span_id: str                     # 当前Span ID
+    parent_span_id: Optional[str]   # 父Span ID
+    timestamp: datetime              # 时间戳
+    tenant_id: str                   # 租户ID
+    scene_id: Optional[str]          # 场景ID
+    session_id: Optional[str]        # 会话ID
+    user_id: Optional[str]           # 用户ID
+    component: str                   # 组件名称
+    operation: str                   # 操作类型
+    status: str                      # 状态: success/error
+    duration_ms: float               # 耗时(ms)
+    input_data: Optional[Dict]       # 输入数据
+    output_data: Optional[Dict]      # 输出数据
+    error_info: Optional[Dict]       # 错误信息
+    metadata: Optional[Dict]         # 元数据
+    token_usage: Optional[Dict]      # Token使用情况
+```
+
+#### 3.4.5 告警规则示例
+
+```yaml
+# 告警规则配置
+alert_rules:
+  - name: HighErrorRate
+    description: 错误率过高
+    condition: rate(agent_errors_total[5m]) / rate(agent_requests_total[5m]) > 0.05
+    severity: warning
+    notification:
+      - webhook
+      - email
+
+  - name: TokenBudgetLow
+    description: Token预算即将耗尽
+    condition: token_budget_remaining < token_budget_total * 0.1
+    severity: critical
+    notification:
+      - webhook
+      - email
+      - sms
+
+  - name: HighLatency
+    description: 响应延迟过高
+    condition: histogram_quantile(0.99, agent_request_duration_seconds[5m]) > 5
+    severity: warning
+    notification:
+      - webhook
+
+  - name: DataSourceUnhealthy
+    description: 数据源不健康
+    condition: data_source_health_status == 0
+    severity: critical
+    notification:
+      - webhook
+      - email
+```
 
 ---
 

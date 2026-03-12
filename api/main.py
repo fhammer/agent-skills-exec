@@ -11,12 +11,9 @@ import uvicorn
 from api.config import settings
 from api.routers import agent, tenants, skills, health, auth
 from api.database import init_db, close_db
-from api.middleware import (
-    TenantMiddleware,
-    RateLimitMiddleware,
-    LoggingMiddleware,
-    AuthMiddleware
-)
+
+# 导入中间件
+from api.middleware import RateLimitMiddleware, LoggingMiddleware, AuthMiddleware
 from api.exceptions import (
     AgentException,
     TenantNotFoundException,
@@ -24,14 +21,50 @@ from api.exceptions import (
     AuthenticationException
 )
 
+# 全局管理器实例
+_tenant_manager = None
+_scene_manager = None
+_session_manager = None
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """应用生命周期管理"""
+    global _tenant_manager, _scene_manager, _session_manager
+
     # 启动时初始化
     print("🚀 Agent Framework API 启动中...")
     await init_db()
     print("✅ 数据库初始化完成")
+
+    # 初始化多租户管理系统
+    from agent.multi_tenant import TenantManager, SceneManager, SessionManager
+    from agent.multi_tenant.storage import InMemoryTenantStorage, InMemorySceneStorage, InMemorySessionStorage
+    from api.routers.tenants import init_managers
+
+    _tenant_manager = TenantManager(InMemoryTenantStorage())
+    await _tenant_manager.initialize()
+
+    _scene_manager = SceneManager(InMemorySceneStorage())
+    await _scene_manager.initialize()
+
+    _session_manager = SessionManager(InMemorySessionStorage())
+    await _session_manager.initialize()
+
+    init_managers(_tenant_manager, _scene_manager, _session_manager)
+    print("✅ 多租户管理系统初始化完成")
+
+    # 创建默认租户（开发环境）
+    try:
+        from agent.multi_tenant import SubscriptionPlan
+        await _tenant_manager.create_tenant(
+            name="Default Tenant",
+            plan=SubscriptionPlan.FREE,
+        )
+        print("✅ 默认租户创建成功")
+    except Exception as e:
+        print(f"ℹ️  租户已存在或创建失败: {e}")
+
     print("🌐 API 服务已启动")
     yield
     # 关闭时清理
@@ -59,12 +92,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 自定义中间件 (注意：FastAPI中间件按相反顺序执行)
-# 执行顺序: Auth -> Tenant -> RateLimit -> Logging
-app.add_middleware(LoggingMiddleware)       # 最后执行（记录所有内容）
-app.add_middleware(RateLimitMiddleware)    # 倒数第二执行（需要tenant_id）
-app.add_middleware(TenantMiddleware)       # 倒数第三执行（设置tenant_id）
-app.add_middleware(AuthMiddleware)         # 最先执行（验证身份）
+# 简化的中间件配置 - 移除复杂的 TenantMiddleware 依赖
+# 目前只添加基础中间件，认证中间件在 DEBUG 模式下会跳过
+app.add_middleware(LoggingMiddleware)
+app.add_middleware(RateLimitMiddleware)
+app.add_middleware(AuthMiddleware)
+
 
 # 注册路由
 app.include_router(health.router, prefix="/api/v1", tags=["健康检查"])
